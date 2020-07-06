@@ -1611,6 +1611,25 @@ in
           A new module is available: 'programs.nushell'.
         '';
       }
+
+      {
+        time = "2020-07-24T19:14:39+00:00";
+        condition = hostPlatform.isLinux && (with config.systemd.user;
+          services != {} || sockets != {} || targets != {} || timers != {});
+        message = ''
+          The systemd activation is now handled by 'sd-switch', a program that
+          stops, starts, reloads, etc. systemd units as necessary to match the
+          new Home Manager configuration.
+
+          Since sd-switch is relatively lightweight it is always used and the
+          options
+
+            - systemd.user.startServices
+            - systemd.user.servicesStartTimeoutMs
+
+          are no longer used and can be removed from your configuration.
+        '';
+      }
     ];
   };
 }

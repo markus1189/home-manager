@@ -152,9 +152,11 @@ in
         example = unitExample "Path";
       };
 
+      # Keep for a while for backwards compatibility.
       startServices = mkOption {
         default = false;
         type = types.bool;
+        visible = false;
         description = ''
           Start all services that are wanted by active targets.
           Additionally, stop obsolete services from the previous
@@ -162,9 +164,11 @@ in
         '';
       };
 
+      # Keep for a while for backwards compatibility.
       servicesStartTimeoutMs = mkOption {
         default = 0;
         type = types.int;
+        visible = false;
         description = ''
           How long to wait for started services to fail until their
           start is considered successful.
@@ -203,6 +207,16 @@ in
               "Must use Linux for modules that require systemd: " + names;
         }
       ];
+
+      warnings = mkIf (cfg.startServices || cfg.servicesStartTimeoutMs != 0) [
+        ''
+          The options
+
+            - systemd.user.startServices
+            - systemd.user.servicesStartTimeoutMs
+
+          are obsolete and can be removed.''
+      ];
     }
 
     # If we run under a Linux system we assume that systemd is
@@ -230,13 +244,11 @@ in
       # set it ourselves in that case.
       home.activation.reloadSystemD = hm.dag.entryAfter ["linkGeneration"] (
         let
-          autoReloadCmd = ''
-            ${pkgs.ruby}/bin/ruby ${./systemd-activate.rb} \
-              "''${oldGenPath=}" "$newGenPath" "${servicesStartTimeoutMs}"
-          '';
-
-          legacyReloadCmd = ''
-            bash ${./systemd-activate.sh} "''${oldGenPath=}" "$newGenPath"
+          sdSwitchCmd = ''
+            ${pkgs.sd-switch}/bin/sd-switch \
+              ''${DRY_RUN:+--dry-run} $VERBOSE_ARG \
+              ''${oldGenPath:+--old-units $oldGenPath/home-files/.config/systemd/user} \
+              --new-units $newGenPath/home-files/.config/systemd/user
           '';
 
           ensureRuntimeDir = "XDG_RUNTIME_DIR=\${XDG_RUNTIME_DIR:-/run/user/$(id -u)}";
@@ -254,8 +266,7 @@ in
               fi
 
               ${ensureRuntimeDir} \
-              PATH=${dirOf cfg.systemctlPath}:$PATH \
-                ${if cfg.startServices then autoReloadCmd else legacyReloadCmd}
+                ${sdSwitchCmd}
             else
               echo "User systemd daemon not running. Skipping reload."
             fi
