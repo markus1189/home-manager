@@ -95,6 +95,9 @@
 /modules/programs/ne.nix                              @cwyc
 /tests/modules/programs/ne                            @cwyc
 
+/modules/programs/newsboat.nix                        @markus1189
+/modules/programs/newsboat/                           @markus1189
+
 /modules/programs/noti.nix                            @marsam
 
 /modules/programs/nushell.nix                         @Philipp-M
